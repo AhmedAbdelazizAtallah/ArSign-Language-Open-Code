@@ -45,7 +45,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # =====================================================================
 # Frontend Builder Stage
 # =====================================================================
-FROM node:20-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
