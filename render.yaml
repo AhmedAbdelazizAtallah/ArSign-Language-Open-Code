@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: asl-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: MODEL_PATH
+        value: /app/models/best.onnx
+      - key: USE_GPU
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://asl-frontend.onrender.com
+    healthCheckPath: /health
+    autoDeploy: true
+    numInstances: 1
+    plan: standard
+
+  - type: web
+    name: asl-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://asl-backend.onrender.com
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true
+    numInstances: 1
+    plan: starter

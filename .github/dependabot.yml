@@ -1,0 +1,78 @@
+version: 2
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(python): "
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "ruff*"
+          - "mypy*"
+          - "types-*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Node.js dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nodejs"
+    commit-message:
+      prefix: "deps(frontend): "
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "prettier*"
+          - "jest*"
+          - "@testing-library/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps(actions): "
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker): "
