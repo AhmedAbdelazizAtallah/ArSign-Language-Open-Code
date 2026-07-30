@@ -7,10 +7,16 @@ Handles image, video, and camera frame predictions.
 import base64
 import uuid
 import logging
+import os
+import tempfile
+from datetime import datetime
 from typing import Optional, List
 
 from fastapi import APIRouter, File, UploadFile, Form, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+
+import cv2
+import numpy as np
 
 from backend.services.inference_service import InferenceService
 from backend.services.history_service import HistoryService
@@ -18,14 +24,14 @@ from backend.services.sentence_service import SentenceService
 from backend.core.dependencies import (
     get_inference_service,
     get_history_service,
-    get_sentence_service
+    get_sentence_service,
 )
 from backend.schemas import (
     ImagePredictResponse,
     VideoPredictResponse,
     CameraFrameResponse,
     Detection,
-    BoundingBox
+    BoundingBox,
 )
 
 router = APIRouter()
@@ -40,7 +46,7 @@ async def predict_image(
     max_detections: Optional[int] = Form(None),
     inference_service: InferenceService = Depends(get_inference_service),
     history_service: HistoryService = Depends(get_history_service),
-    sentence_service: SentenceService = Depends(get_sentence_service)
+    sentence_service: SentenceService = Depends(get_sentence_service),
 ):
     """Predict on uploaded image."""
     # Validate file
@@ -49,8 +55,6 @@ async def predict_image(
 
     # Read image
     contents = await file.read()
-    import cv2
-    import numpy as np
     nparr = np.frombuffer(contents, np.uint8)
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -62,7 +66,7 @@ async def predict_image(
         image,
         conf_threshold=conf_threshold,
         iou_threshold=iou_threshold,
-        max_detections=max_detections
+        max_detections=max_detections,
     )
 
     # Build sentence from detections
@@ -70,35 +74,32 @@ async def predict_image(
     if sentence_service.state.current_word:
         sentence_text = sentence_service.get_display_text()
 
-    # Save to history
-    history_service.add_entry(
-        source="image",
-        source_name=file.filename or "unknown",
-        detections=[
-            DetectionModel(
-                bbox=det.bbox,
-                confidence=det.confidence,
-                class_id=det.class_id,
-                class_name=det.class_name
-            )
-            for det in result.detections
-        ],
-        sentence=sentence_text,
-        latency_ms=result.total_ms,
-        fps=result.fps,
-        avg_confidence=sum(d.confidence for d in result.detections) / len(result.detections) if result.detections else 0
-    )
-
     # Convert to response format
     detections = [
         Detection(
             bbox=BoundingBox(x1=d.bbox[0], y1=d.bbox[1], x2=d.bbox[2], y2=d.bbox[3]),
             confidence=d.confidence,
             class_id=d.class_id,
-            class_name=d.class_name
+            class_name=d.class_name,
         )
         for d in result.detections
     ]
+
+    # Save to history
+    avg_conf = (
+        sum(d.confidence for d in result.detections) / len(result.detections)
+        if result.detections
+        else 0
+    )
+    history_service.add_entry(
+        source="image",
+        source_name=file.filename or "unknown",
+        detections=detections,
+        sentence=sentence_text,
+        latency_ms=result.total_ms,
+        fps=result.fps,
+        avg_confidence=avg_conf,
+    )
 
     return ImagePredictResponse(
         success=True,
@@ -108,7 +109,7 @@ async def predict_image(
         predictions=detections,
         sentence=sentence_text,
         provider=result.provider,
-        model_version="1.0.0"
+        model_version="1.0.0",
     )
 
 
@@ -121,16 +122,15 @@ async def predict_video(
     max_detections: Optional[int] = Form(None),
     sample_rate: int = Form(1),
     inference_service: InferenceService = Depends(get_inference_service),
-    history_service: HistoryService = Depends(get_history_service)
+    history_service: HistoryService = Depends(get_history_service),
 ):
     """Process uploaded video file."""
     if not file.content_type or not file.content_type.startswith("video/"):
         raise HTTPException(400, "File must be a video")
 
     # Save video temporarily
-    import tempfile
-    import os
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
+    suffix = os.path.splitext(file.filename or "")[1] or ".mp4"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         contents = await file.read()
         tmp.write(contents)
         video_path = tmp.name
@@ -142,10 +142,9 @@ async def predict_video(
             conf_threshold=conf_threshold,
             iou_threshold=iou_threshold,
             max_detections=max_detections,
-            sample_rate=sample_rate
+            sample_rate=sample_rate,
         )
 
-        # Save to history
         sentence_text = ""  # Would build from frames
 
         history_service.add_entry(
@@ -155,7 +154,7 @@ async def predict_video(
             sentence=sentence_text,
             latency_ms=0,
             fps=result["video_info"]["fps"],
-            avg_confidence=0
+            avg_confidence=0,
         )
 
         return VideoPredictResponse(
@@ -166,7 +165,7 @@ async def predict_video(
             processed_frames=result["processed_frames"],
             predictions=result["predictions"],
             sentence=sentence_text,
-            processing_time_ms=0
+            processing_time_ms=0,
         )
 
     finally:
@@ -181,14 +180,12 @@ async def predict_camera_frame(
     iou_threshold: Optional[float] = Form(None),
     max_detections: Optional[int] = Form(None),
     inference_service: InferenceService = Depends(get_inference_service),
-    sentence_service: SentenceService = Depends(get_sentence_service)
+    sentence_service: SentenceService = Depends(get_sentence_service),
 ):
     """Process single camera frame (base64 encoded)."""
     try:
         # Decode base64
         frame_data = base64.b64decode(frame)
-        import cv2
-        import numpy as np
         nparr = np.frombuffer(frame_data, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -200,7 +197,7 @@ async def predict_camera_frame(
             image,
             conf_threshold=conf_threshold,
             iou_threshold=iou_threshold,
-            max_detections=max_detections
+            max_detections=max_detections,
         )
 
         # Update sentence builder
@@ -214,7 +211,7 @@ async def predict_camera_frame(
                 bbox=BoundingBox(x1=d.bbox[0], y1=d.bbox[1], x2=d.bbox[2], y2=d.bbox[3]),
                 confidence=d.confidence,
                 class_id=d.class_id,
-                class_name=d.class_name
+                class_name=d.class_name,
             )
             for d in result.detections
         ]
@@ -225,9 +222,11 @@ async def predict_camera_frame(
             latency_ms=result.total_ms,
             fps=result.fps,
             predictions=detections,
-            sentence=sentence_text
+            sentence=sentence_text,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Camera frame error: {e}")
         raise HTTPException(500, f"Frame processing failed: {str(e)}")
