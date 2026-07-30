@@ -319,3 +319,16 @@ class InferenceService:
                                      stats["total_inference_ms"] +
                                      stats["total_nms_ms"]) / stats["total_inferences"]
         return stats
+
+
+
+# ---------------------------------------------------------------------------
+# Singleton accessor
+# ---------------------------------------------------------------------------
+from functools import lru_cache
+
+
+@lru_cache()
+def get_inference_service() -> InferenceService:
+    """Return a shared singleton InferenceService instance."""
+    return InferenceService()
