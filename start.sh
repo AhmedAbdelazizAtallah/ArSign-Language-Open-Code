@@ -11,7 +11,6 @@ mkdir -p "${MODEL_DIR}"
 if [ ! -f "${MODEL_PATH}" ]; then
   echo "Downloading model from: ${MODEL_URL}"
   curl -fL --retry 3 -o "${MODEL_PATH}" "${MODEL_URL}"
-
   if [ ! -s "${MODEL_PATH}" ]; then
     echo "ERROR: Download failed - model file is empty."
     rm -f "${MODEL_PATH}"
@@ -22,10 +21,17 @@ else
   echo "Model already present."
 fi
 
-# --- Diagnostic: print the real import error (remove later) ---
-echo "=== DIAGNOSTIC: trying to import backend.main ==="
+# --- Diagnostic: inspect the filesystem and import error ---
+echo "=== DIAGNOSTIC START ==="
+echo "--- pwd ---"
+pwd
+echo "--- ls /app ---"
+ls -la /app
+echo "--- ls /app/backend ---"
+ls -la /app/backend
+echo "--- python import attempt ---"
 python -c "import backend.main" || true
-echo "=== END DIAGNOSTIC ==="
+echo "=== DIAGNOSTIC END ==="
 
 PORT="${PORT:-8000}"
 echo "Starting Arabic Sign Language AI on port ${PORT} ..."
