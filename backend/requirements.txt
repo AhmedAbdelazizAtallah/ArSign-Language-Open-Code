@@ -22,7 +22,7 @@ ffmpeg-python==0.2.0
 
 # Utilities
 python-multipart==0.0.9
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 requests==2.32.3
 
 # Logging
