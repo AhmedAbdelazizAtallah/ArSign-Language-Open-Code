@@ -15,7 +15,7 @@ onnxruntime==1.19.2
 # Image Processing
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
-Pillow==10.4.0
+Pillow==12.3.0
 
 # Video Processing
 ffmpeg-python==0.2.0
