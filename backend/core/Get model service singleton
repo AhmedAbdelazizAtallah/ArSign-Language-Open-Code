@@ -4,7 +4,7 @@ Inference Service Dependencies
 
 from functools import lru_cache
 
-from backend.services.model_service import ModelService
+from backend.services.model_service import ModelService, get_model_service as _get_model_service
 from backend.services.inference_service import InferenceService
 from backend.services.history_service import HistoryService
 from backend.services.sentence_service import SentenceService
@@ -14,7 +14,7 @@ from backend.services.settings_service import SettingsService
 @lru_cache()
 def get_model_service() -> ModelService:
     """Get model service singleton."""
-    return ModelService()
+    return _get_model_service()
 
 
 @lru_cache()
