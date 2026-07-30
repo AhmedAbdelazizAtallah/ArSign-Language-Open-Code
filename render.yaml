@@ -20,7 +20,7 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     numInstances: 1
-    plan: standard
+    plan: free
 
   - type: web
     name: asl-frontend
@@ -34,4 +34,4 @@ services:
         value: production
     autoDeploy: true
     numInstances: 1
-    plan: starter
+    plan: free
