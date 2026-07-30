@@ -13,7 +13,7 @@ from typing import List, Optional, Dict, Any
 from pathlib import Path
 
 from backend.config.settings import get_settings
-from backend.services.model_service import ModelService
+from backend.services.model_service import ModelService, get_model_service
 from backend.models.domain import InferenceResult, DetectionModel
 from backend.logging.config import get_logger
 
@@ -25,7 +25,7 @@ class InferenceService:
 
     def __init__(self):
         self.settings = get_settings()
-        self.model_service = ModelService()
+        self.model_service = get_model_service()
         self._stats = {
             "total_inferences": 0,
             "total_preprocess_ms": 0.0,
