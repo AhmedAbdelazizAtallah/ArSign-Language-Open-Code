@@ -21,18 +21,6 @@ else
   echo "Model already present."
 fi
 
-# --- Diagnostic: inspect the filesystem and import error ---
-echo "=== DIAGNOSTIC START ==="
-echo "--- pwd ---"
-pwd
-echo "--- ls /app ---"
-ls -la /app
-echo "--- ls /app/backend ---"
-ls -la /app/backend
-echo "--- python import attempt ---"
-python -c "import backend.main" || true
-echo "=== DIAGNOSTIC END ==="
-
 PORT="${PORT:-8000}"
 echo "Starting Arabic Sign Language AI on port ${PORT} ..."
 exec uvicorn backend.main:app --host 0.0.0.0 --port "${PORT}"
