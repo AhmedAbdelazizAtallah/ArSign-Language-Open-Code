@@ -16,7 +16,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: https://asl-frontend.onrender.com
+        value: '["https://asl-frontend.onrender.com"]'
     healthCheckPath: /health
     autoDeploy: true
     numInstances: 1
