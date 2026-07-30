@@ -23,7 +23,7 @@
     "react-hook-form": "^7.53.0",
     "@hookform/resolvers": "^3.9.0",
     "zod": "^3.23.8",
-    "recharts": "^2.12.7",
+    "recharts": "^3.10.1",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.0",
     "class-variance-authority": "^0.7.0",
