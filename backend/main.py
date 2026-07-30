@@ -18,7 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.config.settings import get_settings
-from backend.logging.structured import setup_logging
+from backend.logging.config import setup_logging
 from backend.middleware.request_id import RequestIDMiddleware
 from backend.middleware.timing import TimingMiddleware
 from backend.middleware.security import SecurityHeadersMiddleware
