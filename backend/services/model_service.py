@@ -143,3 +143,16 @@ class ModelService:
         self._session = None
         self._loaded = False
         logger.info("Model service shutdown")
+
+
+
+# ---------------------------------------------------------------------------
+# Singleton accessor
+# ---------------------------------------------------------------------------
+from functools import lru_cache
+
+
+@lru_cache()
+def get_model_service() -> "ModelService":
+    """Return a shared singleton ModelService instance."""
+    return ModelService()
