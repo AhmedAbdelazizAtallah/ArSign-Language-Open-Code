@@ -22,6 +22,11 @@ else
   echo "Model already present."
 fi
 
+# --- Diagnostic: print the real import error (remove later) ---
+echo "=== DIAGNOSTIC: trying to import backend.main ==="
+python -c "import backend.main" || true
+echo "=== END DIAGNOSTIC ==="
+
 PORT="${PORT:-8000}"
 echo "Starting Arabic Sign Language AI on port ${PORT} ..."
 exec uvicorn backend.main:app --host 0.0.0.0 --port "${PORT}"
