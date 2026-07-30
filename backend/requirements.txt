@@ -14,7 +14,7 @@ onnxruntime==1.19.2
 
 # Image Processing
 opencv-python-headless==4.10.0.84
-numpy==1.26.4
+numpy==2.5.1
 Pillow==10.4.0
 
 # Video Processing
