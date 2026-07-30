@@ -22,7 +22,7 @@ from backend.logging.config import setup_logging
 from backend.middleware.request_id import RequestIDMiddleware
 from backend.middleware.timing import TimingMiddleware
 from backend.middleware.security import SecurityHeadersMiddleware
-from backend.api import health, inference, sentence, history, settings, metrics
+from backend.api import api_router
 from backend.core.exceptions import (
     InferenceError,
     ModelLoadError,
@@ -31,7 +31,7 @@ from backend.core.exceptions import (
     model_load_error_handler,
     validation_error_handler,
     http_exception_handler,
-    general_exception_handler
+    general_exception_handler,
 )
 
 settings = get_settings()
@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
         docs_url="/docs" if settings.debug else None,
         redoc_url="/redoc" if settings.debug else None,
         openapi_url="/openapi.json" if settings.debug else None,
-        lifespan=lifespan
+        lifespan=lifespan,
     )
 
     # Middleware (order matters)
@@ -94,13 +94,8 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_error_handler)
     app.add_exception_handler(Exception, general_exception_handler)
 
-    # Include routers
-    app.include_router(health.router, prefix=f"/api/{settings.api_version}", tags=["Health"])
-    app.include_router(inference.router, prefix=f"/api/{settings.api_version}", tags=["Inference"])
-    app.include_router(sentence.router, prefix=f"/api/{settings.api_version}", tags=["Sentence"])
-    app.include_router(history.router, prefix=f"/api/{settings.api_version}", tags=["History"])
-    app.include_router(settings.router, prefix=f"/api/{settings.api_version}", tags=["Settings"])
-    app.include_router(metrics.router, prefix=f"/api/{settings.api_version}", tags=["Metrics"])
+    # Include unified API router
+    app.include_router(api_router, prefix=f"/api/{settings.api_version}")
 
     # Root endpoint
     @app.get("/")
@@ -109,7 +104,7 @@ def create_app() -> FastAPI:
             "name": settings.app_name,
             "version": settings.app_version,
             "status": "running",
-            "docs": "/docs" if settings.debug else "disabled"
+            "docs": "/docs" if settings.debug else "disabled",
         }
 
     return app
