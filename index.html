@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Arabic Sign Language AI — Real-Time Recognition</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#111935; --card:rgba(255,255,255,.06);
+    --stroke:rgba(255,255,255,.12); --txt:#e8ecf6; --muted:#9aa6c4;
+    --accent:#6d8bff; --accent2:#8a6dff; --good:#37d29a; --warn:#ffcf5c; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,"Segoe UI",Roboto,Tahoma,sans-serif; color:var(--txt);
+    background:radial-gradient(1200px 600px at 15% -10%,#1b2550 0%,transparent 60%),
+               radial-gradient(1000px 500px at 100% 0%,#2a1b50 0%,transparent 55%),
+               var(--bg);
+    min-height:100vh;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:grid;place-items:center;font-size:22px;box-shadow:0 8px 24px rgba(109,139,255,.35)}
+  h1{font-size:19px;margin:0}
+  .sub{font-size:12px;color:var(--muted)}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--card);
+          border:1px solid var(--stroke);padding:8px 12px;border-radius:999px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .dot.ok{background:var(--good);box-shadow:0 0 10px var(--good)}
+  .dot.bad{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+
+  .tabs{display:flex;gap:8px;background:var(--card);border:1px solid var(--stroke);
+        padding:6px;border-radius:14px;width:fit-content;margin-bottom:16px}
+  .tab{padding:9px 16px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--muted);border:none;background:transparent}
+  .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+
+  .grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:16px;backdrop-filter:blur(8px)}
+  .card h3{margin:0 0 12px;font-size:15px}
+
+  .stage{position:relative;background:#05070f;border-radius:12px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}
+  .stage video,.stage img,.stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .stage .hint{color:var(--muted);font-size:14px;text-align:center;padding:20px;z-index:1}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  button.btn{padding:11px 16px;border-radius:10px;border:1px solid var(--stroke);
+    background:var(--card);color:var(--txt);cursor:pointer;font-size:14px;font-weight:600}
+  button.btn:hover{border-color:var(--accent)}
+  button.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
+  input[type=file]{display:none}
+  label.file{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:10px;
+    border:1px dashed var(--stroke);cursor:pointer;font-size:14px}
+
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .metric{background:#0a0f22;border:1px solid var(--stroke);border-radius:10px;padding:10px 12px}
+  .metric .k{font-size:11px;color:var(--muted)}
+  .metric .v{font-size:18px;font-weight:700}
+
+  .letters{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;min-height:44px}
+  .chip{padding:6px 10px;border-radius:999px;font-size:14px;border:1px solid var(--stroke);background:#0a0f22}
+  .chip .c{color:var(--muted);font-size:11px;margin-left:4px}
+
+  .sentence{direction:rtl;text-align:right;font-size:30px;line-height:1.7;min-height:60px;
+    background:#0a0f22;border:1px solid var(--stroke);border-radius:12px;padding:14px;margin-top:6px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .toolbar .btn{padding:8px 12px;font-size:13px}
+  .slider{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
+  input[type=range]{flex:1}
+  footer{margin-top:26px;text-align:center;color:var(--muted);font-size:12px}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">🖐️</div>
+      <div>
+        <h1>Arabic Sign Language AI</h1>
+        <div class="sub">Real-Time Recognition · YOLO26s · ONNX Runtime</div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Checking backend…</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="camera">📷 Live Camera</button>
+    <button class="tab" data-mode="image">🖼️ Image</button>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: stage -->
+    <div class="card">
+      <h3 id="stageTitle">Live Camera</h3>
+      <div class="stage" id="stage">
+        <div class="hint" id="stageHint">Press “Start Camera” to begin real-time recognition.</div>
+        <video id="video" autoplay playsinline muted style="display:none"></video>
+        <img id="photo" style="display:none" />
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <!-- Camera controls -->
+      <div class="row" id="cameraControls">
+        <button class="btn primary" id="startCam">▶ Start Camera</button>
+        <button class="btn" id="stopCam" disabled>⏹ Stop</button>
+      </div>
+
+      <!-- Image controls -->
+      <div class="row" id="imageControls" style="display:none">
+        <label class="file" for="fileInput">📁 Choose Image</label>
+        <input type="file" id="fileInput" accept="image/*" />
+        <button class="btn primary" id="detectImg" disabled>🔍 Detect</button>
+      </div>
+
+      <div class="slider">
+        <span>Confidence ≥</span>
+        <input type="range" id="conf" min="0.1" max="0.9" step="0.05" value="0.3" />
+        <b id="confVal">0.30</b>
+      </div>
+    </div>
+
+    <!-- RIGHT: results -->
+    <div class="card">
+      <h3>Live Metrics</h3>
+      <div class="metrics">
+        <div class="metric"><div class="k">FPS</div><div class="v" id="mFps">—</div></div>
+        <div class="metric"><div class="k">Latency</div><div class="v" id="mLat">—</div></div>
+        <div class="metric"><div class="k">Device</div><div class="v" id="mDev" style="font-size:13px">—</div></div>
+        <div class="metric"><div class="k">Detections</div><div class="v" id="mDet">—</div></div>
+      </div>
+
+      <h3 style="margin-top:16px">Detected Letters</h3>
+      <div class="letters" id="letters"><span class="sub">No detections yet.</span></div>
+
+      <h3 style="margin-top:16px">Sentence Builder <span class="sub">(Arabic RTL)</span></h3>
+      <div class="sentence" id="sentence" dir="rtl"></div>
+      <div class="toolbar">
+        <button class="btn" id="space">␣ Space</button>
+        <button class="btn" id="back">⌫ Delete</button>
+        <button class="btn" id="clear">🗑 Clear</button>
+        <button class="btn" id="speak">🔊 Speak</button>
+        <button class="btn" id="copy">📋 Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Backend: <a id="apiLink" href="#" target="_blank">—</a> ·
+    Built for graduation project · Set your API URL at the top of the script.
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — set this to your backend URL (no trailing slash)
+   ============================================================ */
+const API_BASE = "https://asl-backend-is1t.onrender.com";
+
+/* ---- class_id/class_name → Arabic letter (32 classes) ---- */
+const AR = {
+  ain:"ع", al:"ال", aleff:"ا", bb:"ب", dal:"د", dha:"ظ", dhad:"ض", fa:"ف",
+  gaaf:"ق", ghain:"غ", ha:"ه", haa:"ح", jeem:"ج", kaaf:"ك", khaa:"خ", la:"لا",
+  laam:"ل", meem:"م", nun:"ن", ra:"ر", saad:"ص", seen:"س", sheen:"ش", ta:"ط",
+  taa:"ت", thaa:"ث", thal:"ذ", toot:"ة", waw:"و", ya:"ي", yaa:"ى", zay:"ز"
+};
+const arOf = n => AR[n] ?? n;
+
+/* ---- elements ---- */
+const $ = id => document.getElementById(id);
+const stage=$("stage"), video=$("video"), photo=$("photo"), overlay=$("overlay");
+const ctx = overlay.getContext("2d");
+const confEl=$("conf"), confVal=$("confVal");
+let currentMode="camera", stream=null, loopOn=false, wordArr=[], sentenceArr=[];
+let lastSent=0, cooldown={};
+
+/* ---- API link ---- */
+$("apiLink").textContent = API_BASE;
+$("apiLink").href = API_BASE + "/api/v1/health";
+
+/* ---- health check ---- */
+async function checkHealth(){
+  try{
+    const r = await fetch(API_BASE + "/api/v1/health");
+    const j = await r.json();
+    $("statusDot").className = "dot ok";
+    $("statusText").textContent = "Backend online" + (j.model_loaded ? " · model ready" : " · warming up");
+    $("mDev").textContent = j.execution_provider ? j.execution_provider.replace("ExecutionProvider","") : "CPU";
+  }catch(e){
+    $("statusDot").className = "dot bad";
+    $("statusText").textContent = "Backend offline (waking up…)";
+  }
+}
+checkHealth(); setInterval(checkHealth, 15000);
+
+/* ---- confidence slider ---- */
+confEl.oninput = () => confVal.textContent = (+confEl.value).toFixed(2);
+
+/* ---- tabs ---- */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    currentMode = t.dataset.mode;
+    stopCamera();
+    $("cameraControls").style.display = currentMode==="camera" ? "flex":"none";
+    $("imageControls").style.display  = currentMode==="image"  ? "flex":"none";
+    $("stageTitle").textContent = currentMode==="camera" ? "Live Camera" : "Image Recognition";
+    $("stageHint").style.display="block";
+    $("stageHint").textContent = currentMode==="camera"
+      ? "Press “Start Camera” to begin real-time recognition."
+      : "Choose an image to detect Arabic sign letters.";
+    video.style.display="none"; photo.style.display="none";
+    clearOverlay();
+  };
+});
+
+/* ---- overlay helpers ---- */
+function sizeOverlay(w,h){ overlay.width=w; overlay.height=h; }
+function clearOverlay(){ ctx.clearRect(0,0,overlay.width,overlay.height); }
+function colorFor(c){ return c>=0.7?"#37d29a":c>=0.4?"#ffcf5c":"#ff6b6b"; }
+
+function drawDetections(dets, srcW, srcH){
+  clearOverlay();
+  // overlay uses object-fit:contain -> compute letterbox mapping
+  const box = overlay.getBoundingClientRect();
+  const scale = Math.min(box.width/srcW, box.height/srcH);
+  const dw = srcW*scale, dh = srcH*scale;
+  const ox = (box.width-dw)/2, oy=(box.height-dh)/2;
+  sizeOverlay(box.width, box.height);
+  dets.forEach(d=>{
+    const b=d.bbox; const x1=ox+b.x1*scale, y1=oy+b.y1*scale, x2=ox+b.x2*scale, y2=oy+b.y2*scale;
+    const col = colorFor(d.confidence);
+    ctx.lineWidth=3; ctx.strokeStyle=col; ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+    const label = `${arOf(d.class_name)}  ${(d.confidence*100).toFixed(0)}%`;
+    ctx.font="bold 18px system-ui"; const tw=ctx.measureText(label).width+12;
+    ctx.fillStyle=col; ctx.fillRect(x1, y1-26, tw, 24);
+    ctx.fillStyle="#05070f"; ctx.fillText(label, x1+6, y1-8);
+  });
+}
+
+/* ---- render results panel ---- */
+function renderResults(data){
+  const preds = data.predictions||[];
+  $("mFps").textContent = data.fps ? data.fps.toFixed(1) : "—";
+  $("mLat").textContent = data.latency_ms ? data.latency_ms.toFixed(0)+" ms" : "—";
+  if(data.provider) $("mDev").textContent = data.provider.replace("ExecutionProvider","");
+  $("mDet").textContent = preds.length;
+
+  const L=$("letters");
+  if(!preds.length){ L.innerHTML='<span class="sub">No detections.</span>'; return; }
+  L.innerHTML = preds.map(p=>`<span class="chip">${arOf(p.class_name)}<span class="c">${(p.confidence*100).toFixed(0)}%</span></span>`).join("");
+
+  // sentence builder: take top detection, with cooldown to avoid duplicates
+  const top = preds.slice().sort((a,b)=>b.confidence-a.confidence)[0];
+  if(top && top.confidence >= +confEl.value){
+    const now=Date.now(); const key=top.class_name;
+    if(!cooldown[key] || now-cooldown[key] > 1200){
+      cooldown[key]=now; addLetter(arOf(top.class_name));
+    }
+  }
+}
+
+/* ---- sentence builder ---- */
+function addLetter(ch){
+  if(ch==="لا"){ wordArr.push("لا"); } else { wordArr.push(ch); }
+  renderSentence();
+}
+function renderSentence(){
+  const cur = wordArr.join("");
+  $("sentence").textContent = (sentenceArr.join(" ") + (sentenceArr.length?" ":"") + cur).trim();
+}
+$("space").onclick = () => { if(wordArr.length){ sentenceArr.push(wordArr.join("")); wordArr=[]; renderSentence(); } };
+$("back").onclick  = () => { if(wordArr.length) wordArr.pop(); else if(sentenceArr.length){ wordArr=sentenceArr.pop().split(""); } renderSentence(); };
+$("clear").onclick = () => { wordArr=[]; sentenceArr=[]; renderSentence(); };
+$("copy").onclick  = () => { navigator.clipboard.writeText($("sentence").textContent); $("copy").textContent="✓ Copied"; setTimeout(()=>$("copy").textContent="📋 Copy",1200); };
+$("speak").onclick = () => { const u=new SpeechSynthesisUtterance($("sentence").textContent); u.lang="ar-SA"; speechSynthesis.speak(u); };
+
+/* ---- send a frame/blob to backend ---- */
+async function detectBlob(blob){
+  const fd = new FormData();
+  fd.append("file", blob, "frame.jpg");
+  fd.append("conf_threshold", confEl.value);
+  const r = await fetch(API_BASE + "/api/v1/predict/image", {method:"POST", body:fd});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ================= CAMERA MODE ================= */
+$("startCam").onclick = startCamera;
+$("stopCam").onclick  = stopCamera;
+
+async function startCamera(){
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:640,height:480}});
+    video.srcObject = stream; video.style.display="block"; $("stageHint").style.display="none";
+    $("startCam").disabled=true; $("stopCam").disabled=false;
+    loopOn=true; loop();
+  }catch(e){ alert("Camera access denied or unavailable: "+e.message); }
+}
+function stopCamera(){
+  loopOn=false; $("startCam").disabled=false; $("stopCam").disabled=true;
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  video.style.display="none"; clearOverlay();
+}
+async function loop(){
+  if(!loopOn) return;
+  const now=Date.now();
+  if(now-lastSent > 500 && video.videoWidth){   // ~2 requests/sec (free tier friendly)
+    lastSent=now;
+    const c=document.createElement("canvas"); c.width=video.videoWidth; c.height=video.videoHeight;
+    c.getContext("2d").drawImage(video,0,0);
+    c.toBlob(async b=>{
+      try{ const data=await detectBlob(b); renderResults(data); drawDetections(data.predictions||[], video.videoWidth, video.videoHeight); }
+      catch(e){ /* skip frame on error */ }
+    }, "image/jpeg", 0.8);
+  }
+  requestAnimationFrame(loop);
+}
+
+/* ================= IMAGE MODE ================= */
+$("fileInput").onchange = e => {
+  const f=e.target.files[0]; if(!f) return;
+  photo.src=URL.createObjectURL(f); photo.style.display="block"; $("stageHint").style.display="none";
+  video.style.display="none"; $("detectImg").disabled=false; clearOverlay();
+};
+$("detectImg").onclick = async () => {
+  const f=$("fileInput").files[0]; if(!f) return;
+  $("detectImg").disabled=true; $("detectImg").textContent="⏳ Detecting…";
+  try{
+    const data=await detectBlob(f); renderResults(data);
+    await new Promise(r=>{ if(photo.complete) r(); else photo.onload=r; });
+    drawDetections(data.predictions||[], photo.naturalWidth, photo.naturalHeight);
+  }catch(e){ alert("Detection failed: "+e.message+"\n(The free backend may be waking up — try again in ~60s.)"); }
+  $("detectImg").disabled=false; $("detectImg").textContent="🔍 Detect";
+};
+
+window.addEventListener("resize", ()=>{ if(overlay.width) clearOverlay(); });
+</script>
+</body>
+</html>
