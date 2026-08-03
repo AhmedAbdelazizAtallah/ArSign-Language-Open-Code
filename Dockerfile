@@ -2,7 +2,7 @@
 # Optimized for Render's free plan (512 MB RAM). Downloads the model at
 # startup via start.sh instead of baking it into the image.
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
