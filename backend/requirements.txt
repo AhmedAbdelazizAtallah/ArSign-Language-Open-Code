@@ -13,7 +13,7 @@ pydantic-settings==2.5.2
 onnxruntime==1.19.2
 
 # Image Processing
-opencv-python-headless==4.10.0.84
+opencv-python-headless==5.0.0.93
 numpy==1.26.4
 Pillow==10.4.0
 
